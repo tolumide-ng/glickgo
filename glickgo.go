@@ -5,12 +5,12 @@ package glickgo
 import "fmt"
 
 var (
-	scalingFactor        = 173.7178
+	ScalingFactor        = 173.7178
 	convergenceTolerance = 0.000_001
 )
 
 func Greet(name string) string {
-	return fmt.Sprintf("Hello %s! %f %f", name, scalingFactor, convergenceTolerance)
+	return fmt.Sprintf("Hello %s! %f %f", name, ScalingFactor, convergenceTolerance)
 }
 
 type Glicko2 struct {
