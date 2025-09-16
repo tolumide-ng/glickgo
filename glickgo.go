@@ -6,11 +6,12 @@ import "fmt"
 
 var (
 	ScalingFactor        = 173.7178
-	convergenceTolerance = 0.000_001
+	ConvergenceTolerance = 0.000_001 // ε
+	Tau                  = 0.5
 )
 
 func Greet(name string) string {
-	return fmt.Sprintf("Hello %s! %f %f", name, ScalingFactor, convergenceTolerance)
+	return fmt.Sprintf("Hello %s! %f %f", name, ScalingFactor, ConvergenceTolerance)
 }
 
 type Glicko2 struct {
@@ -22,7 +23,7 @@ type Glicko2 struct {
 
 func New() Glicko2 {
 	return Glicko2{
-		Tau:                  0.5,
-		ConvergenceTolerance: convergenceTolerance,
+		Tau:                  Tau,
+		ConvergenceTolerance: ConvergenceTolerance,
 	}
 }
