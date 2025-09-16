@@ -41,21 +41,22 @@ func (p PlayerArray) ToPlayer(playerID string) Player {
 }
 
 // Convert Player -> PlayerArray
-func (p Player) ToPlayerArray() PlayerArray {
+func (p *Player) ToPlayerArray() PlayerArray {
 	return PlayerArray{p.rating, p.ratingDeviation, p.volatilty}
 }
 
 // Convert the ratings and RD's onto the Glicko2 scale
 // Convert Player to scaled values (μ, φ) for Glicko-2 math
-func (p Player) Scale() Scale {
+func (p *Player) Scale() Scale {
 	miu := ((p.rating - initialRating) / glickgo.ScalingFactor)
 	phi := p.volatilty / glickgo.ScalingFactor
 
 	return Scale{miu, phi}
 }
 
-func (p Player) GetV(opponents []Player) float64 {
-	return p.Scale().v(opponents)
+func (p *Player) GetV(opponents []Player) float64 {
+	s := p.Scale()
+	return s.v(opponents)
 }
 
 // Δ = v * Σ_j g(φ_j) * (s_j - E(μ, μ_j))
@@ -65,7 +66,9 @@ func (p Player) GetV(opponents []Player) float64 {
 //	g   = g(φ_j) = 1 / sqrt(1 + 3φ_j²/π²)
 //	s_j = actual score vs opponent j (1 = win, 0.5 = draw, 0 = loss)
 //	E   = expected score vs opponent j = 1 / (1 + exp(-g(φ_j)(μ - μ_j)))
-func (p Player) Delta(opponents map[Player]glickgo.Outcome) float64 {
+//
+// NB: This method returns (Delta Δ, sum) i.e delta and sum
+func (p *Player) deltaAndSum(opponents map[Player]glickgo.Outcome) (float64, float64) {
 	oppList := make([]Player, 0, len(opponents))
 	for p := range opponents {
 		oppList = append(oppList, p)
@@ -79,7 +82,6 @@ func (p Player) Delta(opponents map[Player]glickgo.Outcome) float64 {
 		oppScale := opp.Scale()
 
 		score, err := glickgo.GameResult{Outcome: outcome, PlayerID: opp.PlayerID}.Value()
-
 		if err != nil {
 			continue
 		}
@@ -87,10 +89,10 @@ func (p Player) Delta(opponents map[Player]glickgo.Outcome) float64 {
 		sum += oppScale.g() * (score - meScale.e(oppScale))
 	}
 
-	return v * sum
+	return v * sum, sum
 }
 
-func (p Player) getF(delta, v, x float64) float64 {
+func (p *Player) getF(delta, v, x float64) float64 {
 	a := p.volatilty * p.volatilty
 	eX := math.Exp(x)
 
@@ -105,7 +107,7 @@ func (p Player) getF(delta, v, x float64) float64 {
 	return (num / den) - ((x - a) / glickgo.Tau * glickgo.Tau)
 }
 
-func (p Player) newVolatility(delta, v float64) float64 {
+func (p *Player) newVolatility(delta, v float64) float64 {
 
 	// Solve for x
 	delta2 := delta * delta
@@ -154,7 +156,8 @@ func (p Player) newVolatility(delta, v float64) float64 {
 	return math.Exp(A / 2)
 }
 
-func (p Player) Update(opponents map[Player]glickgo.Outcome) {
+// Returns the updated glicko rating, rating deviation, and volatility of the player as a new struct
+func (p *Player) Update(opponents map[Player]glickgo.Outcome) Player {
 
 	oppList := make([]Player, 0, len(opponents))
 	for opp, _ := range opponents {
@@ -163,7 +166,7 @@ func (p Player) Update(opponents map[Player]glickgo.Outcome) {
 
 	meScale := p.Scale()
 
-	delta := p.Delta(opponents)
+	delta, sum := p.deltaAndSum(opponents)
 	v := p.GetV(oppList)
 
 	// σ′
@@ -171,4 +174,15 @@ func (p Player) Update(opponents map[Player]glickgo.Outcome) {
 
 	// Step 6: pre-rating period RD φ* = √(φ² + σ′²)
 	phiStar := math.Sqrt((meScale.phi * meScale.phi) + (newVolatility * newVolatility))
+
+	// Step 7: Update the rating and RD to the new values (new RD φ₀ and rating μ₀)
+	newRatingDeviation := 1 / (math.Sqrt((1 / (phiStar * phiStar)) + (1 / v)))
+	newMiu := meScale.miu + (newRatingDeviation*newRatingDeviation)*sum
+
+	return Player{
+		rating:          (newMiu * glickgo.ScalingFactor) + initialRating,
+		ratingDeviation: newRatingDeviation * glickgo.ScalingFactor,
+		PlayerID:        p.PlayerID,
+		volatilty:       newVolatility,
+	}
 }
