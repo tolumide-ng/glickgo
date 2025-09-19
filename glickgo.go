@@ -13,6 +13,7 @@ var (
 	DefaultTau                          = 0.5
 	DefaultScalingFactor                = 173.7178
 	DefaultConvergenceTolerance         = 0.000_001 // ε
+	MaxIterations                       = 10_000
 )
 
 func Greet(name string) string {

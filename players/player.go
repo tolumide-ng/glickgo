@@ -1,19 +1,11 @@
 package players
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/tolumide-ng/glickgo"
 )
-
-// const (
-// 	DefaultRating               = 1500
-// 	DefaultRatingDeviation      = 350.0
-// 	DefaultVolatility           = 0.06
-// 	DefaultTau                  = 0.5
-// 	DefaultScalingFactor        = 173.7178
-// 	DefaultConvergenceTolerance = 0.000_001 // ε
-// )
 
 type PlayerArray [3]float64
 
@@ -50,11 +42,11 @@ func (p *Player) ToPlayerArray() PlayerArray {
 
 // Convert the ratings and RD's onto the Glicko2 scale
 // Convert Player to scaled values (μ, φ) for Glicko-2 math
-func (p *Player) Scale() Scale {
+func (p *Player) Scale() scale {
 	miu := ((p.rating - glickgo.DefaultRating) / glickgo.DefaultScalingFactor)
 	phi := p.volatilty / glickgo.DefaultScalingFactor
 
-	return Scale{miu, phi}
+	return scale{miu, phi}
 }
 
 func (p *Player) GetV(opponents []Player) float64 {
@@ -83,11 +75,7 @@ func (p *Player) deltaAndSum(opponents map[Player]glickgo.Outcome) (float64, flo
 
 	for opp, outcome := range opponents {
 		oppScale := opp.Scale()
-
-		score, err := glickgo.GameResult{Outcome: outcome, PlayerID: opp.PlayerID}.Value()
-		if err != nil {
-			continue
-		}
+		score := outcome.Value()
 
 		sum += oppScale.g() * (score - meScale.e(oppScale))
 	}
@@ -115,10 +103,10 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 	// Solve for x
 	delta2 := delta * delta
 	phi2 := p.Scale().phi * p.Scale().phi
-	a := p.volatilty * p.volatilty
+	a := math.Log(p.volatilty * p.volatilty)
 
 	// Set the initial values of the iterative algorithm
-	A := p.volatilty * p.volatilty
+	A := a
 	B := 0.0
 
 	if (delta2) > ((phi2) + v) {
@@ -135,26 +123,30 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 		B = a - k*glickgo.DefaultTau
 	}
 
-	fA := p.getF(delta, v, A)
-	fB := p.getF(delta, v, B)
+	fA, fB := p.getF(delta, v, A), p.getF(delta, v, B)
 
+	iterations := 0
 	// --- Step 4: Illinois algorithm iteration ---
 	for math.Abs(B-A) > glickgo.DefaultConvergenceTolerance {
+		iterations += 1
+
 		// (a) False position step
 		C := A + (A-B)*fA/(fB-fA)
 		fC := p.getF(delta, v, C)
 
 		// (b) Bracket update
 		if fC*fB <= 0 {
-			A = B
-			fA = fB
+			A, fA = B, fB
 		} else {
 			fA /= 2
 		}
 
+		if iterations >= glickgo.MaxIterations {
+			panic(fmt.Sprintf("Convergence fail at %d iterations", iterations))
+		}
+
 		// (c) Move bracket edge
-		B = C
-		fB = fC
+		B, fB = C, fC
 	}
 	return math.Exp(A / 2)
 }

@@ -14,15 +14,15 @@ const (
 	WinScore  float64 = 1
 )
 
-type GameResult struct {
+type Result struct {
 	Outcome Outcome
-	// who the this outcome/GameResult is for:
+	// who the this outcome/Result(GameResult) is for:
 	// i.e if PlayerA sees this as a win, then PlayerB must see it as a loss
 	PlayerID string
 }
 
-func (g GameResult) Value() float64 {
-	switch g.Outcome {
+func (o Outcome) Value() float64 {
+	switch o {
 	case Loss:
 		return LossScore
 	case Draw:
