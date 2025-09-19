@@ -2,16 +2,21 @@ package glickgo
 
 // Glickgo is a glicko-2 library in golang
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var (
-	ScalingFactor        = 173.7178
-	ConvergenceTolerance = 0.000_001 // ε
-	Tau                  = 0.5
+	DefaultRating               float64 = 1500
+	DefaultRatingDeviation              = 350.0
+	DefaultVolatility                   = 0.06
+	DefaultTau                          = 0.5
+	DefaultScalingFactor                = 173.7178
+	DefaultConvergenceTolerance         = 0.000_001 // ε
 )
 
 func Greet(name string) string {
-	return fmt.Sprintf("Hello %s! %f %f", name, ScalingFactor, ConvergenceTolerance)
+	return fmt.Sprintf("Hello %s! %f %f", name, DefaultScalingFactor, DefaultConvergenceTolerance)
 }
 
 type Glicko2 struct {
@@ -23,7 +28,7 @@ type Glicko2 struct {
 
 func New() Glicko2 {
 	return Glicko2{
-		Tau:                  Tau,
-		ConvergenceTolerance: ConvergenceTolerance,
+		Tau:                  DefaultTau,
+		ConvergenceTolerance: DefaultConvergenceTolerance,
 	}
 }

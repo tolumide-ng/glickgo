@@ -1,13 +1,17 @@
 package glickgo
 
-import "errors"
-
 type Outcome int
 
 const (
 	Loss Outcome = iota
 	Draw
 	Win
+)
+
+const (
+	LossScore float64 = 0
+	DrawScore float64 = 0.5
+	WinScore  float64 = 1
 )
 
 type GameResult struct {
@@ -17,15 +21,15 @@ type GameResult struct {
 	PlayerID string
 }
 
-func (g GameResult) Value() (float64, error) {
+func (g GameResult) Value() float64 {
 	switch g.Outcome {
 	case Loss:
-		return 0, nil
+		return LossScore
 	case Draw:
-		return 0.5, nil
+		return DrawScore
 	case Win:
-		return 1, nil
+		return WinScore
 	default:
-		return 0, errors.New("unknown outcome")
+		panic("unknown outcome")
 	}
 }

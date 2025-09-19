@@ -6,11 +6,14 @@ import (
 	"github.com/tolumide-ng/glickgo"
 )
 
-const (
-	initialRating          = 1500
-	initialRatingDeviation = 350.0
-	initialVolatility      = 0.06
-)
+// const (
+// 	DefaultRating               = 1500
+// 	DefaultRatingDeviation      = 350.0
+// 	DefaultVolatility           = 0.06
+// 	DefaultTau                  = 0.5
+// 	DefaultScalingFactor        = 173.7178
+// 	DefaultConvergenceTolerance = 0.000_001 // ε
+// )
 
 type PlayerArray [3]float64
 
@@ -21,16 +24,16 @@ type Player struct {
 	PlayerID        string
 }
 
-func From(rating float64, ratingDeviation float64, volatility float64, playerID string) Player {
+func From(rating, ratingDeviation, volatility float64, playerID string) Player {
 	return Player{rating, ratingDeviation, volatility, playerID}
 }
 
 // Initialize a Glicko2 player
 func New(PlayerID string) Player {
 	return Player{
-		rating:          initialRating,
-		ratingDeviation: initialRatingDeviation,
-		volatilty:       initialVolatility,
+		rating:          glickgo.DefaultRating,
+		ratingDeviation: glickgo.DefaultRatingDeviation,
+		volatilty:       glickgo.DefaultVolatility,
 		PlayerID:        PlayerID,
 	}
 }
@@ -48,8 +51,8 @@ func (p *Player) ToPlayerArray() PlayerArray {
 // Convert the ratings and RD's onto the Glicko2 scale
 // Convert Player to scaled values (μ, φ) for Glicko-2 math
 func (p *Player) Scale() Scale {
-	miu := ((p.rating - initialRating) / glickgo.ScalingFactor)
-	phi := p.volatilty / glickgo.ScalingFactor
+	miu := ((p.rating - glickgo.DefaultRating) / glickgo.DefaultScalingFactor)
+	phi := p.volatilty / glickgo.DefaultScalingFactor
 
 	return Scale{miu, phi}
 }
@@ -104,7 +107,7 @@ func (p *Player) getF(delta, v, x float64) float64 {
 	// denominator = 2 (φ² + v + e^x)²
 	den := 2 * preDen * preDen // denominator
 
-	return (num / den) - ((x - a) / glickgo.Tau * glickgo.Tau)
+	return (num / den) - ((x - a) / glickgo.DefaultTau * glickgo.DefaultTau)
 }
 
 func (p *Player) newVolatility(delta, v float64) float64 {
@@ -125,18 +128,18 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 		// Case: Δ² ≤ φ² + v
 		// Iterate until f(a - kτ) < 0
 		k := 1.0
-		for p.getF(delta, v, (a-k*glickgo.Tau)) < 0 {
+		for p.getF(delta, v, (a-k*glickgo.DefaultTau)) < 0 {
 			k += 1
 		}
 
-		B = a - k*glickgo.Tau
+		B = a - k*glickgo.DefaultTau
 	}
 
 	fA := p.getF(delta, v, A)
 	fB := p.getF(delta, v, B)
 
 	// --- Step 4: Illinois algorithm iteration ---
-	for math.Abs(B-A) > glickgo.ConvergenceTolerance {
+	for math.Abs(B-A) > glickgo.DefaultConvergenceTolerance {
 		// (a) False position step
 		C := A + (A-B)*fA/(fB-fA)
 		fC := p.getF(delta, v, C)
@@ -180,8 +183,8 @@ func (p *Player) Update(opponents map[Player]glickgo.Outcome) Player {
 	newMiu := meScale.miu + (newRatingDeviation*newRatingDeviation)*sum
 
 	return Player{
-		rating:          (newMiu * glickgo.ScalingFactor) + initialRating,
-		ratingDeviation: newRatingDeviation * glickgo.ScalingFactor,
+		rating:          (newMiu * glickgo.DefaultScalingFactor) + glickgo.DefaultRating,
+		ratingDeviation: newRatingDeviation * glickgo.DefaultScalingFactor,
 		PlayerID:        p.PlayerID,
 		volatilty:       newVolatility,
 	}
