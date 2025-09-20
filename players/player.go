@@ -51,6 +51,7 @@ func (p *Player) Scale() scale {
 
 func (p *Player) GetV(opponents []Player) float64 {
 	s := p.Scale()
+
 	return s.v(opponents)
 }
 
@@ -104,6 +105,7 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 	// Solve for x
 	delta2 := delta * delta
 	phi2 := p.Scale().phi * p.Scale().phi
+
 	a := math.Log(p.volatilty * p.volatilty)
 
 	// Set the initial values of the iterative algorithm
@@ -154,17 +156,17 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 
 // Returns the updated glicko rating, rating deviation, and volatility of the player as a new struct
 // PLEASE NOTE THAT THE OUTCOME OF EACH GAME IS IN THE PERSPECTIVE OF THE PLAYER (P - the receiver value), and not each opponent
-func (p *Player) Update(opponents map[Player]glickgo.Result) Player {
+func (p *Player) Update(result map[Player]glickgo.Result) Player {
 
-	oppList := make([]Player, 0, len(opponents))
-	for opp, _ := range opponents {
-		oppList = append(oppList, opp)
+	opponents := make([]Player, 0, len(result))
+	for opp, _ := range result {
+		opponents = append(opponents, opp)
 	}
 
 	meScale := p.Scale()
 
-	delta, sum := p.deltaAndSum(opponents)
-	v := p.GetV(oppList)
+	delta, sum := p.deltaAndSum(result)
+	v := p.GetV(opponents)
 
 	// σ′
 	newVolatility := p.newVolatility(delta, v)

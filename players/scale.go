@@ -27,7 +27,7 @@ func (me scale) v(opponents []Player) float64 {
 		oppScale := opp.Scale()
 		g := oppScale.g()
 		e := me.e(oppScale)
-		sum += g * g * (1 - e)
+		sum += g * g * e * (1 - e)
 	}
 
 	return 1 / sum

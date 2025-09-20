@@ -10,8 +10,8 @@ var (
 	DefaultRating               float64 = 1500
 	DefaultRatingDeviation              = 350.0
 	DefaultVolatility                   = 0.06
-	DefaultTau                          = 0.5
 	DefaultScalingFactor                = 173.7178
+	DefaultTau                          = 0.5
 	DefaultConvergenceTolerance         = 0.000_001 // ε
 	MaxIterations                       = 10_000
 )
