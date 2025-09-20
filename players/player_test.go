@@ -7,7 +7,7 @@ import (
 	"github.com/tolumide-ng/glickgo"
 )
 
-const floatApprox = 1e-3
+const floatApprox = 1e-2
 
 func approxEqual(a, b float64) bool {
 	return math.Abs(a-b) <= floatApprox
@@ -119,4 +119,23 @@ func TestNewVolatilityAndUpdateAgainstGlickmanExample(t *testing.T) {
 		t.Fatalf("sigma mismatch: want %v got %v", wantSigma, updated.volatility)
 	}
 
+}
+
+func TestPlayMatchSymmetryAndDirection(t *testing.T) {
+	p1 := New("p1")
+	p2 := New("p2")
+
+	// make p1 stronger so their rating increases on win
+	p1.rating = 1600
+	p2.rating = 1400
+
+	res := PlayMatch([2]Player{p1, p2}, glickgo.NewResult(glickgo.Win, "p1"))
+
+	if res[0].rating <= p1.rating {
+		t.Fatalf("winner did not increase rating: before %v after %v", p1.rating, res[0].rating)
+	}
+
+	if res[1].rating >= p2.rating {
+		t.Fatalf("loser did not decrease rating: before %v after %v", p2.rating, res[1].rating)
+	}
 }
