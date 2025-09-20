@@ -3,8 +3,10 @@ package players
 import "math"
 
 type scale struct {
-	miu float64
-	phi float64
+	// μ ratings
+	miu float64 // μ
+	// φ Rating deviation
+	phi float64 // φ
 }
 
 // g(φ) = 1 / sqrt(1 + 3φ² / π²)

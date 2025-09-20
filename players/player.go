@@ -44,7 +44,7 @@ func (p *Player) ToPlayerArray() PlayerArray {
 // Convert Player to scaled values (μ, φ) for Glicko-2 math
 func (p *Player) Scale() scale {
 	miu := ((p.rating - glickgo.DefaultRating) / glickgo.DefaultScalingFactor)
-	phi := p.volatilty / glickgo.DefaultScalingFactor
+	phi := p.ratingDeviation / glickgo.DefaultScalingFactor
 
 	return scale{miu, phi}
 }
@@ -63,7 +63,8 @@ func (p *Player) GetV(opponents []Player) float64 {
 //	E   = expected score vs opponent j = 1 / (1 + exp(-g(φ_j)(μ - μ_j)))
 //
 // NB: This method returns (Delta Δ, sum) i.e delta and sum
-func (p *Player) deltaAndSum(opponents map[Player]glickgo.Outcome) (float64, float64) {
+// PLEASE NOTE THAT THE OUTCOME OF EACH GAME IS IN THE PERSPECTIVE OF THE PLAYER (P - the receiver value), and not each opponent
+func (p *Player) deltaAndSum(opponents map[Player]glickgo.Result) (float64, float64) {
 	oppList := make([]Player, 0, len(opponents))
 	for p := range opponents {
 		oppList = append(oppList, p)
@@ -152,7 +153,8 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 }
 
 // Returns the updated glicko rating, rating deviation, and volatility of the player as a new struct
-func (p *Player) Update(opponents map[Player]glickgo.Outcome) Player {
+// PLEASE NOTE THAT THE OUTCOME OF EACH GAME IS IN THE PERSPECTIVE OF THE PLAYER (P - the receiver value), and not each opponent
+func (p *Player) Update(opponents map[Player]glickgo.Result) Player {
 
 	oppList := make([]Player, 0, len(opponents))
 	for opp, _ := range opponents {
@@ -180,4 +182,32 @@ func (p *Player) Update(opponents map[Player]glickgo.Outcome) Player {
 		PlayerID:        p.PlayerID,
 		volatilty:       newVolatility,
 	}
+}
+
+// If the game was won, then the player who won the game should be identified in the outcome id
+// If the game was a draw, then it doesn't matter who was listed there (you should probably just leave the player ID empty in this case)
+func PlayMatch(players [2]Player, outcome glickgo.Result) [2]Player {
+	result := [2]Player{}
+
+	for index, p := range players {
+		opponentIndex := 1 - index
+
+		// verdict from my perspective as a player (i.e 'p')
+		verdict := outcome
+
+		if verdict.Value() != glickgo.DrawScore { // if it was a draw, we don't care about updating it
+			// if it was a win, and the provided ID on the outcome isn't the same as this player, then we assume that this player lost the match
+			if outcome.PlayerID != p.PlayerID {
+				verdict = glickgo.Result{Outcome: (glickgo.Outcome)(glickgo.LossScore)}
+			}
+		}
+
+		// verdict
+		opponent := map[Player]glickgo.Result{players[opponentIndex]: verdict} //
+
+		newRatings := p.Update(opponent)
+		result[index] = newRatings
+	}
+
+	return result
 }

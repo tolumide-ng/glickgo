@@ -15,7 +15,7 @@ const (
 )
 
 type Result struct {
-	Outcome Outcome
+	Outcome
 	// who the this outcome/Result(GameResult) is for:
 	// i.e if PlayerA sees this as a win, then PlayerB must see it as a loss
 	PlayerID string
@@ -32,4 +32,14 @@ func (o Outcome) Value() float64 {
 	default:
 		panic("unknown outcome")
 	}
+}
+
+func NewResult(outcome Outcome, PlayerID string) Result {
+	result := Result{Outcome: outcome}
+
+	if outcome.Value() == WinScore {
+		result.PlayerID = PlayerID
+	}
+
+	return result
 }
