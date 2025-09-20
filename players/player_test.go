@@ -139,3 +139,34 @@ func TestPlayMatchSymmetryAndDirection(t *testing.T) {
 		t.Fatalf("loser did not decrease rating: before %v after %v", p2.rating, res[1].rating)
 	}
 }
+
+func TestRoundTripConversions(t *testing.T) {
+	p := From(1723.4, 44.2, 0.123, "x")
+	arr := p.ToPlayerArray()
+	p2 := arr.ToPlayer("x2")
+
+	if !approxEqual(p.rating, arr[0]) || !approxEqual(p.ratingDeviation, arr[1]) || !approxEqual(p.volatility, arr[2]) {
+		t.Fatalf("ToPlayerArray mismatch")
+	}
+	if !approxEqual(p2.rating, arr[0]) {
+		t.Fatalf("ToPlayer mismatch")
+	}
+}
+
+func TestNoGamesPeriodOnlyRDIncrease(t *testing.T) {
+	// If a player plays no games, only step 6 applies: φ0 = sqrt(φ^2 + σ^2)
+	p := From(1500, 200, 0.06, "p")
+
+	// Simulate no games by passing empty map
+	e := map[Player]glickgo.Result{}
+	updated := p.Update(e)
+
+	// Expected phiStar = sqrt(phi^2 + sigma^2)
+	phi := p.Scale().phi
+	phiStar := math.Sqrt(math.Pow(phi, 2) + math.Pow(p.volatility, 2))
+	wantRD := phiStar * glickgo.DefaultScalingFactor
+
+	if !approxEqual(updated.ratingDeviation, wantRD) {
+		t.Fatalf("RD without games mismatch: want %v got %v", wantRD, updated.ratingDeviation)
+	}
+}
