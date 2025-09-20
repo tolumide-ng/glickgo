@@ -14,7 +14,7 @@ type Player struct {
 	// High Rating Deviation ->  We don't know much about this player
 	// Low Rating Deviation -> We are confident about this player's true skill
 	ratingDeviation float64
-	volatilty       float64
+	volatility      float64
 	PlayerID        string
 }
 
@@ -28,7 +28,7 @@ func New(PlayerID string) Player {
 	return Player{
 		rating:          glickgo.DefaultRating,
 		ratingDeviation: glickgo.DefaultRatingDeviation,
-		volatilty:       glickgo.DefaultVolatility,
+		volatility:      glickgo.DefaultVolatility,
 		PlayerID:        PlayerID,
 	}
 }
@@ -40,16 +40,16 @@ func (p PlayerArray) ToPlayer(playerID string) Player {
 
 // `ToPlayerArray` converts Player -> PlayerArray
 func (p *Player) ToPlayerArray() PlayerArray {
-	return PlayerArray{p.rating, p.ratingDeviation, p.volatilty}
+	return PlayerArray{p.rating, p.ratingDeviation, p.volatility}
 }
 
 // Convert the ratings and Rating Deviation of a player into the Glicko2 scale
 // `Scale` converts a Player into Glicko-2 scaled values (μ, φ)
 func (p *Player) Scale() scale {
-	miu := ((p.rating - glickgo.DefaultRating) / glickgo.DefaultScalingFactor)
-	phi := p.ratingDeviation / glickgo.DefaultScalingFactor
-
-	return scale{miu, phi}
+	return scale{
+		miu: ((p.rating - glickgo.DefaultRating) / glickgo.DefaultScalingFactor),
+		phi: p.ratingDeviation / glickgo.DefaultScalingFactor,
+	}
 }
 
 func (p *Player) getV(opponents []Player) float64 {
@@ -90,7 +90,7 @@ func (p *Player) deltaAndSum(opponents map[Player]glickgo.Result) (float64, floa
 
 // getF implements the function f(x) from Glickman's paper.
 func (p *Player) getF(delta, v, x float64) float64 {
-	a := math.Log(p.volatilty * p.volatilty)
+	a := math.Log(p.volatility * p.volatility)
 	eX := math.Exp(x)
 
 	phi2 := p.Scale().phi * p.Scale().phi
@@ -112,7 +112,7 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 	delta2 := delta * delta
 	phi2 := p.Scale().phi * p.Scale().phi
 
-	a := math.Log(p.volatilty * p.volatilty)
+	a := math.Log(p.volatility * p.volatility)
 
 	// Set the initial values of the iterative algorithm
 	A := a
@@ -188,7 +188,7 @@ func (p *Player) Update(result map[Player]glickgo.Result) Player {
 		rating:          (newMiu * glickgo.DefaultScalingFactor) + glickgo.DefaultRating,
 		ratingDeviation: newRatingDeviation * glickgo.DefaultScalingFactor,
 		PlayerID:        p.PlayerID,
-		volatilty:       newVolatility,
+		volatility:      newVolatility,
 	}
 }
 

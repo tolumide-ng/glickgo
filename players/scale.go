@@ -11,7 +11,7 @@ type scale struct {
 
 // g(φ) = 1 / sqrt(1 + 3φ² / π²)
 func (s scale) g() float64 {
-	return (1 / (math.Sqrt(1 + 3*(s.phi*s.phi)/(math.Pi*math.Pi))))
+	return (1 / (math.Sqrt(1 + (3 * (math.Pow(s.phi, 2)) / (math.Pow(math.Pi, 2))))))
 }
 
 // Glicko-2 Expected Score (expected otucome or win probability):
@@ -29,7 +29,7 @@ func (me scale) v(opponents []Player) float64 {
 		oppScale := opp.Scale()
 		g := oppScale.g()
 		e := me.e(oppScale)
-		sum += g * g * e * (1 - e)
+		sum += (math.Pow(g, 2)) * e * (1 - e)
 	}
 
 	return 1 / sum

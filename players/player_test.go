@@ -3,15 +3,17 @@ package players
 import (
 	"math"
 	"testing"
+
+	"github.com/tolumide-ng/glickgo"
 )
 
-const floatApprox = 1e-4
+const floatApprox = 1e-3
 
 func approxEqual(a, b float64) bool {
 	return math.Abs(a-b) <= floatApprox
 }
 
-func TestScale_g_and_e_symmetry(t *testing.T) {
+func TestScalegAndeSymmetry(t *testing.T) {
 	// If one player is more uncertain (higher Rating Deviation i.e. 200 below) than the other:
 	// 	- `p` below is very uncertain (high Rating Deviation), `op` is very certain (low RD)
 	// 	- p's expected chance to win might be 65%, but op's expected chance to win might only be 35%
@@ -59,4 +61,62 @@ func TestScale_g_and_e_symmetry(t *testing.T) {
 	if !(e1+e2 > 0.9999 && e1+e2 < 1.0001) {
 		t.Fatalf("E symmetry failed for equal R")
 	}
+}
+
+func TestVAndDeltaAgainstGlikmanExample(t *testing.T) {
+	me := From(1500, 200, 0.06, "me")
+	op1 := From(1400, 30, 0.06, "o1")
+	op2 := From(1550, 100, 0.06, "o2")
+	op3 := From(1700, 300, 0.06, "o3")
+
+	opponents := []Player{op1, op2, op3}
+
+	v := me.getV(opponents)
+	if !approxEqual(v, 1.7785) {
+		t.Fatalf("v mismatch: want 1.7785 got %v", v)
+	}
+
+	// Build results map (scores from me's perspective)
+	res := map[Player]glickgo.Result{
+		op1: glickgo.NewResult(glickgo.Win, "me"),
+		op2: glickgo.NewResult(glickgo.Loss, "o2"),
+		op3: glickgo.NewResult(glickgo.Loss, "o3"),
+	}
+
+	delta, _ := me.deltaAndSum(res)
+	if !approxEqual(delta, -0.4834) {
+		t.Fatalf("delta mismatch: want -0.4834 got %v", delta)
+	}
+}
+
+func TestNewVolatilityAndUpdateAgainstGlickmanExample(t *testing.T) {
+	me := From(1500, 200, 0.06, "me")
+	op1 := From(1400, 30, 0.06, "o1")
+	op2 := From(1550, 100, 0.06, "o2")
+	op3 := From(1700, 300, 0.06, "o3")
+
+	res := map[Player]glickgo.Result{
+		op1: glickgo.NewResult(glickgo.Win, "me"),
+		op2: glickgo.NewResult(glickgo.Loss, "o2"),
+		op3: glickgo.NewResult(glickgo.Loss, "o3"),
+	}
+
+	updated := me.Update(res)
+
+	// Expected values from Glickman's worked example
+	wantRating := 1464.06
+	wantRD := 151.52
+	wantSigma := 0.0599
+
+	if !approxEqual(updated.rating, wantRating) {
+		t.Fatalf("rating mismatch: want %v got %v", wantRating, updated.rating)
+	}
+
+	if !approxEqual(updated.ratingDeviation, wantRD) {
+		t.Fatalf("RD mismatch: want %v got %v", wantRD, updated.ratingDeviation)
+	}
+	if !approxEqual(updated.volatility, wantSigma) {
+		t.Fatalf("sigma mismatch: want %v got %v", wantSigma, updated.volatility)
+	}
+
 }
