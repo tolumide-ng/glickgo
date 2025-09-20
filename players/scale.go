@@ -14,6 +14,8 @@ func (s scale) g() float64 {
 	return (1 / (math.Sqrt(1 + 3*(s.phi*s.phi)/(math.Pi*math.Pi))))
 }
 
+// Glicko-2 Expected Score (expected otucome or win probability):
+// i.e the change that the player with this scale will win against the opponent
 // E(μ, μ_j) = 1 / (1 + exp(-g(φ_j)(μ - μ_j)))
 func (s scale) e(opponent scale) float64 {
 	return 1 / (1 + math.Exp((-opponent.g() * (s.miu - opponent.miu))))

@@ -9,7 +9,10 @@ import (
 
 type PlayerArray [3]float64
 type Player struct {
-	rating          float64
+	rating float64
+	// What does this really mean? It refers to how uncertain we are about a player's true skill
+	// High Rating Deviation ->  We don't know much about this player
+	// Low Rating Deviation -> We are confident about this player's true skill
 	ratingDeviation float64
 	volatilty       float64
 	PlayerID        string
