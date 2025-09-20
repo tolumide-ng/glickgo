@@ -2,23 +2,15 @@ package glickgo
 
 // Glickgo is a glicko-2 library in golang
 
-import (
-	"fmt"
-)
-
 var (
 	DefaultRating               float64 = 1500
 	DefaultRatingDeviation              = 350.0
 	DefaultVolatility                   = 0.06
-	DefaultTau                          = 0.5
 	DefaultScalingFactor                = 173.7178
+	DefaultTau                          = 0.5
 	DefaultConvergenceTolerance         = 0.000_001 // ε
 	MaxIterations                       = 10_000
 )
-
-func Greet(name string) string {
-	return fmt.Sprintf("Hello %s! %f %f", name, DefaultScalingFactor, DefaultConvergenceTolerance)
-}
 
 type Glicko2 struct {
 	// The system constant, τ, which constraints the change in volatility over time, needs to be set
