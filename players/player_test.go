@@ -170,3 +170,41 @@ func TestNoGamesPeriodOnlyRDIncrease(t *testing.T) {
 		t.Fatalf("RD without games mismatch: want %v got %v", wantRD, updated.ratingDeviation)
 	}
 }
+
+func TestDecayDeviation(t *testing.T) {
+	tests := []struct {
+		name   string
+		player Player
+	}{
+		{
+			name:   "normal RD decay",
+			player: From(1500, 50, 0.06, "p1"),
+		},
+		{
+			name:   "RD decay capped at max",
+			player: From(1500, 300, 0.06, "p2"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			decayed := tt.player.DecayDeviation()
+
+			if decayed.rating != tt.player.rating {
+				t.Errorf("rating changed: got %v, want %v", decayed.rating, tt.player.rating)
+			}
+
+			if decayed.volatility != tt.player.volatility {
+				t.Errorf("volatility changed: got %v, want %v", decayed.volatility, tt.player.volatility)
+			}
+
+			if decayed.ratingDeviation < tt.player.ratingDeviation {
+				t.Errorf("RD decreased: got %v, want >= %v", decayed.ratingDeviation, tt.player.ratingDeviation)
+			}
+
+			if decayed.ratingDeviation > glickgo.DefaultRatingDeviation {
+				t.Errorf("RD exceeds max: got %v, want <= %v", decayed.ratingDeviation, glickgo.DefaultRatingDeviation)
+			}
+		})
+	}
+}

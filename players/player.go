@@ -106,6 +106,21 @@ func (p *Player) getF(delta, v, x float64) float64 {
 	return (num / den) - ((x - a) / (glickgo.DefaultTau * glickgo.DefaultTau))
 }
 
+// Decays a player's rating Deviation if they they don't play for s certain rating period.
+// Returns the Updated player's value with a decayed struct
+func (p Player) DecayDeviation() Player {
+	phi := p.Scale().phi
+	phiStar := math.Hypot(phi, p.volatility)
+
+	return Player{
+		rating:          p.rating,
+		ratingDeviation: math.Min(phiStar*glickgo.DefaultScalingFactor, glickgo.DefaultRatingDeviation), // clamp at 350
+		volatility:      p.volatility,
+		PlayerID:        p.PlayerID,
+	}
+
+}
+
 // newVolatility computes the new volatility σ' using the Illinois algorithm
 func (p *Player) newVolatility(delta, v float64) float64 {
 	// Solve for x
@@ -163,6 +178,10 @@ func (p *Player) newVolatility(delta, v float64) float64 {
 // Update returns a new Player with updated rating, RD, and volatility based on a set of results
 // The outcome values are always from the perspective of p (the receiver of this method)
 func (p *Player) Update(result map[Player]glickgo.Result) Player {
+
+	if len(result) == 0 {
+		return p.DecayDeviation()
+	}
 
 	opponents := make([]Player, 0, len(result))
 	for opp, _ := range result {

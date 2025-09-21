@@ -1,8 +1,5 @@
 # GlickGo
-
-
-### Todo:
-- Calculate the expected score of two players (makes it possible to know who to pair against who)
-- Calculate the confidence interval of the player's score
+This is a simple Glick-2 library written in GoLang
 
 ## Credits
+1. [Example of Glicko-2 System](https://www.glicko.net/glicko/glicko2.pdf)
